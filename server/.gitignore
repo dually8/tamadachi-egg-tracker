@@ -34,4 +34,4 @@ lerna-debug.log*
 /playwright/.cache/
 
 # sqlite db
-./prisma/dev.db
+/prisma/dev.db
