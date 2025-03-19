@@ -11,7 +11,6 @@
     "format:check": "prettier --check .",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "scrape": "tsx ./scraper/scraper.ts",
     "test": "playwright test --headed --workers=1",
     "test:ui": "playwright test --ui",
     "test:debug": "playwright test --headed --debug",
