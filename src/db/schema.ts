@@ -7,3 +7,5 @@ export const priceTable = sqliteTable('EggPrice', {
   storeLocation: text('storeLocation').notNull(),
   storeName: text('storeName').notNull(),
 });
+
+export type Price = typeof priceTable.$inferSelect;
