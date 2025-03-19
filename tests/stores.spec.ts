@@ -62,7 +62,9 @@ test('Food City', async ({ page }) => {
 test('Target', async ({ page }) => {
   await page.goto(sites.target);
   await expect(
-    page.locator('[data-test="storeNameWithAddressPopover"]').getByRole('button', { name: 'Chattanooga North' }),
+    page
+      .locator('[data-test="storeNameWithAddressPopover"]')
+      .getByRole('button', { name: 'Chattanooga North' }),
   ).toBeVisible();
   const priceElement = page
     .getByRole('main', { name: 'Grade A Large Eggs - 12ct -' })
