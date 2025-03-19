@@ -1,0 +1,6 @@
+*.css
+*.md
+*.json
+*.yml
+*.yaml
+__old/
