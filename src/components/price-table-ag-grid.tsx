@@ -34,11 +34,27 @@ export default function PriceTableAgGrid({ prices }: Readonly<PriceTableProps>) 
       headerName: 'Date Checked',
       valueFormatter: (params) => new Date(params.value).toLocaleString(),
       sort: 'desc',
+      filter: 'agDateColumnFilter',
+      filterValueGetter: (params) => new Date(params.data!.date),
+      filterParams: {
+        comparator: (filterLocalDateAtMidnight: Date, cellValue: string) => {
+          const date = new Date(cellValue);
+          if (date.getFullYear() === filterLocalDateAtMidnight.getFullYear() &&
+              date.getMonth() === filterLocalDateAtMidnight.getMonth() &&
+              date.getDate() === filterLocalDateAtMidnight.getDate()) {
+            return 0;
+          }
+          return date.getTime() - filterLocalDateAtMidnight.getTime();
+        }
+      },
     }
   ] as ColDef<Price>[], []);
   const defaultColDef: ColDef<Price> = useMemo(() => ({
     sortable: true,
     filter: true,
+    filterParams: {
+      buttons: ['clear'],
+    },
     flex: 1,
     minWidth: 100,
   }), []);
