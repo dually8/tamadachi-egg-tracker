@@ -1,7 +1,7 @@
 'use client';
 
 import { Price } from '@/db/schema';
-import { AllCommunityModule, ColDef, ModuleRegistry } from 'ag-grid-community';
+import { AllCommunityModule, ColDef, ModuleRegistry, colorSchemeDark, colorSchemeLight, themeQuartz } from 'ag-grid-community';
 import { AgGridReact } from 'ag-grid-react';
 import { useTheme } from 'next-themes';
 import { useMemo } from 'react';
@@ -14,6 +14,7 @@ type PriceTableProps = {
 };
 export default function PriceTableAgGrid({ prices }: Readonly<PriceTableProps>) {
   const { systemTheme } = useTheme();
+  const theme = useMemo(() => themeQuartz.withPart(systemTheme === 'dark' ? colorSchemeDark : colorSchemeLight), [systemTheme]);
   const columnDefs: ColDef<Price>[] = useMemo(() => [
     {
       field: 'storeName',
@@ -42,8 +43,9 @@ export default function PriceTableAgGrid({ prices }: Readonly<PriceTableProps>) 
     minWidth: 100,
   }), []);
   return (
-    <div data-ag-theme-mode={systemTheme} className="w-full h-150">
+    <div className="w-full h-150">
       <AgGridReact
+        theme={theme}
         rowData={prices}
         columnDefs={columnDefs}
         defaultColDef={defaultColDef}
