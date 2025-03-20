@@ -29,7 +29,7 @@ test("Trader Joe's", async ({ page }) => {
     date: new Date().toISOString(),
   });
   console.log('Price saved to DB');
-  await page.screenshot({ path: 'playwright-report/trader_joes_screenshot.png' });
+  await page.screenshot({ path: 'screenshots/trader_joes_screenshot.png' });
   console.log('Screenshot taken');
 });
 
@@ -55,7 +55,7 @@ test('Food City', async ({ page }) => {
     date: new Date().toISOString(),
   });
   console.log('Price saved to DB');
-  await page.screenshot({ path: 'playwright-report/food_city_screenshot.png' });
+  await page.screenshot({ path: 'screenshots/food_city_screenshot.png' });
   console.log('Screenshot taken');
 });
 
@@ -82,7 +82,7 @@ test('Target', async ({ page }) => {
     date: new Date().toISOString(),
   });
   console.log('Price saved to DB');
-  await page.screenshot({ path: 'playwright-report/target_screenshot.png' });
+  await page.screenshot({ path: 'screenshots/target_screenshot.png' });
   console.log('Screenshot taken');
 });
 
@@ -90,7 +90,7 @@ test('Aldi', async ({ page }) => {
   await page.goto(sites.aldi);
   await page.getByRole('dialog').getByRole('button', { name: 'Pickup' }).click();
   await page.getByRole('button', { name: 'Confirm' }).click();
-  const priceElement = page.locator('#item_details [data-radium="true"]').getByText(/\$\d+\.\d{2}/);
+  const priceElement = page.locator('#item_details [data-radium="true"]').getByText(/\$\d+\.\d{2}/).first();
   const price = await priceElement.textContent();
   console.log(`Aldi price: ${price}`);
   const parsedPrice = parseFloat(price?.replace('$', '') ?? '0');
@@ -104,15 +104,13 @@ test('Aldi', async ({ page }) => {
     date: new Date().toISOString(),
   });
   console.log('Price saved to DB');
-  await page.screenshot({ path: 'playwright-report/aldi_screenshot.png' });
-  console.log('Screenshot taken');
-  await page.screenshot({ path: 'playwright-report/aldi_screenshot.png' });
+  await page.screenshot({ path: 'screenshots/aldi_screenshot.png' });
   console.log('Screenshot taken');
 });
 
 test('Publix', async ({ page }) => {
   await page.goto(sites.publix);
-  const priceElement = page.locator('#item_details [data-radium="true"]').getByText(/\$\d+\.\d{2}/);
+  const priceElement = page.locator('#item_details [data-radium="true"]').getByText(/\$\d+\.\d{2}/).first();
   const price = await priceElement.textContent();
   console.log(`Publix price: ${price}`);
   const parsedPrice = parseFloat(price?.replace('$', '') ?? '0');
@@ -126,6 +124,6 @@ test('Publix', async ({ page }) => {
     date: new Date().toISOString(),
   });
   console.log('Price saved to DB');
-  await page.screenshot({ path: 'playwright-report/publix_screenshot.png' });
+  await page.screenshot({ path: 'screenshots/publix_screenshot.png' });
   console.log('Screenshot taken');
 });
