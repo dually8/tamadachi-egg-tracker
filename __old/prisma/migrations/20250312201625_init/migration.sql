@@ -1,8 +1,0 @@
--- CreateTable
-CREATE TABLE "EggPrice" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    "storeName" TEXT NOT NULL,
-    "storeLocation" TEXT NOT NULL,
-    "price" REAL NOT NULL,
-    "date" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
