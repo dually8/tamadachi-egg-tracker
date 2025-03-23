@@ -28,6 +28,13 @@ Name is a portmanteau of [tamago 卵](https://jpdb.io/vocabulary/1549140/%E5%8D%
 - [x] Build out charts for tracking prices over time
 - [ ] Make site cuter with some kawaii eggs and such
 
+## Demo
+
+> [!NOTE]
+> This site is currently not hosted anywhere because I don't want to host it anywhere for the time being. The image below may or may not reflect the application in its current state.
+
+![Image of application showing egg prices and charts](/docs/img/egg-price-tracker.png)
+
 ## Resources
 
 - [NextJs](https://nextjs.org/docs/app/getting-started/installation)
