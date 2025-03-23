@@ -20,12 +20,13 @@ Name is a portmanteau of [tamago 卵](https://jpdb.io/vocabulary/1549140/%E5%8D%
 
 ## TODO
 
-- [ ] Table stuff
-  - [ ] Add filtering
-  - [ ] Add sorting
-  - [ ] Add pagination
-  - [ ] Maybe use ag-grid instead???
-- [ ] Build out charts for tracking prices over time
+- [x] Table stuff
+  - [x] Add filtering
+  - [x] Add sorting
+  - [x] Add pagination
+  - [x] Maybe use ag-grid instead???
+- [x] Build out charts for tracking prices over time
+- [ ] Make site cuter with some kawaii eggs and such
 
 ## Resources
 
