@@ -50,3 +50,9 @@ node_modules/
 
 # Sqlite
 *.db
+
+# Script
+check-prices.ps1
+
+# Log
+log.txt
