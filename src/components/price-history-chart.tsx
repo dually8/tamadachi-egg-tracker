@@ -29,10 +29,6 @@ export default function PriceHistoryChart(props: Readonly<PriceHistoryChartProps
       xKey: 'date',
       yKey: 'price',
       yName: 'Price',
-      label: {
-        enabled: true,
-        fontWeight: 'bold',
-      },
     }],
     axes: [
       {
