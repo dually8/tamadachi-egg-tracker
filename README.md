@@ -27,6 +27,10 @@ Name is a portmanteau of [tamago 卵](https://jpdb.io/vocabulary/1549140/%E5%8D%
   - [x] Maybe use ag-grid instead???
 - [x] Build out charts for tracking prices over time
 - [ ] Make site cuter with some kawaii eggs and such
+- [ ] Bugs
+  - [ ] Fix styling issue on mobile (table formatting issue and charts are too squeezed)
+  - [ ] Fix theme toggle bug not toggling table and chart theme
+- [ ] Only pull in latest price check for a given day and only pull in last 2 weeks of data
 
 ## Demo
 
