@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { db } from '../src/db/drizzle';
 import { priceTable } from '../src/db/schema';
+import log from './utils/logger';
+import { extractPrice } from './utils/extract-price';
 
 const URL = 'https://www.foodcity.com/product/703/0003680017019';
 
@@ -14,9 +16,9 @@ test('Food City', async ({ page }) => {
   await page.goto(URL);
   const priceElement = page.locator('.item-detail__price');
   const price = await priceElement.textContent();
-  console.log(`Food City price: ${price}`);
-  const parsedPrice = parseFloat(price?.replace('$', '') ?? '0');
-  console.log(`Food City parsed price: ${parsedPrice}`);
+  log(`Food City price: ${price}`);
+  const parsedPrice = extractPrice(price ?? '0');
+  log(`Food City parsed price: ${parsedPrice}`);
   expect(parsedPrice).toBeGreaterThan(0);
   // Save to DB
   await db.insert(priceTable).values({
@@ -25,7 +27,7 @@ test('Food City', async ({ page }) => {
     storeName: 'Food City',
     date: new Date().toISOString(),
   });
-  console.log('Price saved to DB');
+  log('Food City price saved to DB');
   await page.screenshot({ path: 'screenshots/food_city_screenshot.png' });
-  console.log('Screenshot taken');
+  log('Food City screenshot taken');
 });

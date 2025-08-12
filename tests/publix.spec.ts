@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { db } from '../src/db/drizzle';
 import { priceTable } from '../src/db/schema';
+import { extractPrice } from './utils/extract-price';
+import log from './utils/logger';
 
 const URL = 'https://www.instacart.com/products/324877-publix-eggs-large-12-ct?retailerSlug=publix';
 test('Publix', async ({ page }) => {
@@ -10,9 +12,9 @@ test('Publix', async ({ page }) => {
     .getByText(/\$\d+\.\d{2}/)
     .first();
   const price = await priceElement.textContent();
-  console.log(`Publix price: ${price}`);
-  const parsedPrice = parseFloat(price?.replace('$', '') ?? '0');
-  console.log(`Publix parsed price: ${parsedPrice}`);
+  log(`Publix price: ${price}`);
+  const parsedPrice = extractPrice(price ?? '0');
+  log(`Publix parsed price: ${parsedPrice}`);
   expect(parsedPrice).toBeGreaterThan(0);
   // Save to DB
   await db.insert(priceTable).values({
@@ -21,7 +23,7 @@ test('Publix', async ({ page }) => {
     storeName: 'Publix',
     date: new Date().toISOString(),
   });
-  console.log('Price saved to DB');
+  log('Publix price saved to DB');
   await page.screenshot({ path: 'screenshots/publix_screenshot.png' });
-  console.log('Screenshot taken');
+  log('Publix screenshot taken');
 });

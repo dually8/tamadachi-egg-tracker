@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { db } from '../src/db/drizzle';
 import { priceTable } from '../src/db/schema';
+import { extractPrice } from './utils/extract-price';
+import log from './utils/logger';
 
 const URL = 'https://shop.aldi.us/store/aldi/products/115095-goldhen-grade-a-large-eggs-12-ct';
 
@@ -13,9 +15,9 @@ test('Aldi', async ({ page }) => {
     .getByText(/\$\d+\.\d{2}/)
     .first();
   const price = await priceElement.textContent();
-  console.log(`Aldi price: ${price}`);
-  const parsedPrice = parseFloat(price?.replace('$', '') ?? '0');
-  console.log(`Aldi parsed price: ${parsedPrice}`);
+  log(`Aldi price: ${price}`);
+  const parsedPrice = extractPrice(price ?? '0');
+  log(`Aldi parsed price: ${parsedPrice}`);
   expect(parsedPrice).toBeGreaterThan(0);
   // Save to DB
   await db.insert(priceTable).values({
@@ -24,7 +26,7 @@ test('Aldi', async ({ page }) => {
     storeName: 'Aldi',
     date: new Date().toISOString(),
   });
-  console.log('Price saved to DB');
+  log('Aldi price saved to DB');
   await page.screenshot({ path: 'screenshots/aldi_screenshot.png' });
-  console.log('Screenshot taken');
+  log('Aldi screenshot taken');
 });
