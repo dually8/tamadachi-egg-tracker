@@ -54,5 +54,5 @@ node_modules/
 # Script
 check-prices.ps1
 
-# Log
-log.txt
+# Logs
+logs/
