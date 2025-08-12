@@ -13,8 +13,8 @@ type PriceTableProps = {
   prices: Price[];
 };
 export default function PriceTableAgGrid({ prices }: Readonly<PriceTableProps>) {
-  const { systemTheme } = useTheme();
-  const theme = useMemo(() => themeQuartz.withPart(systemTheme === 'dark' ? colorSchemeDark : colorSchemeLight), [systemTheme]);
+  const { resolvedTheme } = useTheme();
+  const theme = useMemo(() => themeQuartz.withPart(resolvedTheme === 'dark' ? colorSchemeDark : colorSchemeLight), [resolvedTheme]);
   const columnDefs: ColDef<Price>[] = useMemo(() => [
     {
       field: 'storeName',

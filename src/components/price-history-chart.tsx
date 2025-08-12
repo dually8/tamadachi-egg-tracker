@@ -13,10 +13,10 @@ type PriceHistoryChartProps = {
   data: Price[];
 }
 export default function PriceHistoryChart(props: Readonly<PriceHistoryChartProps>) {
-  const { systemTheme } = useTheme();
+  const { resolvedTheme } = useTheme();
 
   const options = useMemo<AgChartOptions>(() => ({
-    theme: systemTheme === 'dark' ? 'ag-default-dark' : 'ag-default',
+    theme: resolvedTheme === 'dark' ? 'ag-default-dark' : 'ag-default',
     title: {
       text: props.title,
     },
@@ -52,7 +52,7 @@ export default function PriceHistoryChart(props: Readonly<PriceHistoryChartProps
         },
       }
     ],
-  }), [props.title, props.data, systemTheme]);
+  }), [props.title, props.data, resolvedTheme]);
   return (
     <div className='py-2'>
       <AgCharts options={options} />
