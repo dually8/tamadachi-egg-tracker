@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
+    "prestart": "pnpm run build",
     "start": "next start",
+    "start:nobuild": "next start",
     "lint": "next lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -31,10 +33,10 @@
     "dotenv": "^16.4.7",
     "drizzle-orm": "^0.40.1",
     "lucide-react": "^0.483.0",
-    "next": "15.2.3",
+    "next": "15.4.6",
     "next-themes": "^0.4.6",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
     "recharts": "^2.15.1",
     "tailwind-merge": "^3.0.2",
     "tailwindcss-animate": "^1.0.7"
@@ -44,11 +46,11 @@
     "@playwright/test": "^1.51.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@types/react": "19.1.10",
+    "@types/react-dom": "19.1.7",
     "drizzle-kit": "^0.30.5",
     "eslint": "^9",
-    "eslint-config-next": "15.2.3",
+    "eslint-config-next": "15.4.6",
     "playwright": "^1.51.1",
     "prettier": "3.5.3",
     "tailwindcss": "^4",
@@ -62,7 +64,9 @@
       "sharp"
     ],
     "overrides": {
-      "esbuild@<=0.24.2": ">=0.25.0"
+      "esbuild@<=0.24.2": ">=0.25.0",
+      "@types/react": "19.1.10",
+      "@types/react-dom": "19.1.7"
     }
   }
 }
