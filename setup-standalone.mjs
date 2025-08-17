@@ -17,7 +17,7 @@ async function copyPublicToStandalone() {
 async function copyStaticToStandalone() {
   try {
     const staticDir = path.join(process.cwd(), '.next', 'static');
-    const standaloneDir = path.join(process.cwd(), '.next', 'standalone', 'static');
+    const standaloneDir = path.join(process.cwd(), '.next', 'standalone', '.next', 'static');
 
     await fs.mkdir(standaloneDir, { recursive: true });
     await fs.cp(staticDir, standaloneDir, { recursive: true });
