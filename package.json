@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
+    "postbuild": "node setup-standalone.mjs",
     "prestart": "pnpm run build",
     "start": "next start",
     "start:nobuild": "next start",
