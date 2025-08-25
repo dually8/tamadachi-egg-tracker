@@ -4,6 +4,8 @@ import { db } from '@/db/drizzle';
 import { Price, priceTable } from '@/db/schema';
 import { desc } from 'drizzle-orm';
 
+export const dynamic = 'force-dynamic';
+
 export default async function Home() {
   // Fetch data from the database
   const prices = await db.select().from(priceTable).orderBy(desc(priceTable.date));
