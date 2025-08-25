@@ -1,11 +1,10 @@
 # syntax=docker.io/docker/dockerfile:1
 
-FROM node:22-alpine AS base
+FROM node:22-bullseye-slim AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-RUN apk add --no-cache libc6-compat
+
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
@@ -32,6 +31,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Allow base path to be set by build args (e.g., from docker compose)
 ARG NEXT_PUBLIC_BASE_PATH
 ENV NEXT_PUBLIC_BASE_PATH=${NEXT_PUBLIC_BASE_PATH}
+ARG DB_FILE_NAME
+ENV DB_FILE_NAME=${DB_FILE_NAME}
 
 RUN \
   if [ -f yarn.lock ]; then yarn run build; \
@@ -43,6 +44,10 @@ RUN \
 # Production image, copy all the files and run next
 FROM base AS runner
 WORKDIR /app
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends sqlite3 && \
+    rm -rf /var/lib/apt/lists/*
 
 ENV NODE_ENV=production
 # Uncomment the following line in case you want to disable telemetry during runtime.
