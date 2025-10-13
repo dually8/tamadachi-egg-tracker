@@ -8,7 +8,8 @@ const URL = 'https://www.instacart.com/products/324877-publix-eggs-large-12-ct?r
 test('Publix', async ({ page }) => {
   await page.goto(URL);
   const priceElement = page
-    .locator('#item_details [data-radium="true"]')
+    .locator('#item_details')
+    .getByText('Current price')
     .getByText(/\$\d+\.\d{2}/)
     .first();
   const price = await priceElement.textContent();

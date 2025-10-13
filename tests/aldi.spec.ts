@@ -11,7 +11,8 @@ test('Aldi', async ({ page }) => {
   await page.getByRole('dialog').getByRole('button', { name: 'Pickup' }).click();
   await page.getByRole('button', { name: 'Confirm' }).click();
   const priceElement = page
-    .locator('#item_details [data-radium="true"]')
+    .locator('#item_details')
+    .getByText('Current price')
     .getByText(/\$\d+\.\d{2}/)
     .first();
   const price = await priceElement.textContent();
