@@ -39,6 +39,10 @@ Name is a portmanteau of [tamago 卵](https://jpdb.io/vocabulary/1549140/%E5%8D%
 
 ![Image of application showing egg prices and charts](/docs/img/egg-price-tracker.png)
 
+## Documentation
+
+- **[Go Backend + Next.js Transformation Guide](./docs/GO_BACKEND_NEXTJS_TRANSFORMATION.md)** - Comprehensive guide for transforming this project to use a Go backend with Next.js SSG/SPA frontend
+
 ## Resources
 
 - [NextJs](https://nextjs.org/docs/app/getting-started/installation)
