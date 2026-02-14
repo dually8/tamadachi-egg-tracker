@@ -2,7 +2,11 @@
 
 ## Available Documentation
 
-### [Go Backend + Next.js SSG/SPA Transformation Guide](./GO_BACKEND_NEXTJS_TRANSFORMATION.md)
+### [Quick Reference Guide](./QUICK_REFERENCE.md) ⚡
+
+A condensed cheat sheet with commands, configurations, and quick examples for the transformation.
+
+### [Go Backend + Next.js SSG/SPA Transformation Guide](./GO_BACKEND_NEXTJS_TRANSFORMATION.md) 📖
 
 A comprehensive guide for transforming this project from a Next.js full-stack application to a Go backend with Next.js frontend (SSG or SPA).
 
@@ -47,5 +51,6 @@ tamadachi-egg-tracker/
 
 ## Quick Links
 
-- [Main README](../README.md) - Getting started guide
-- [Transformation Guide](./GO_BACKEND_NEXTJS_TRANSFORMATION.md) - Go backend + Next.js SSG/SPA
+- [Main README](../README.md) - Getting started guide for current implementation
+- [Quick Reference](./QUICK_REFERENCE.md) - ⚡ Quick commands and configurations
+- [Transformation Guide](./GO_BACKEND_NEXTJS_TRANSFORMATION.md) - 📖 Complete transformation documentation
