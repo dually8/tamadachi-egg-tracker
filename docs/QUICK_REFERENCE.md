@@ -249,6 +249,122 @@ pnpm remove ag-charts-react ag-charts-community
 - [ ] Deploy static files
 - [ ] Test end-to-end functionality
 
+## Docker Deployment (Quick Reference)
+
+### Multi-Container with Docker Compose (Recommended)
+
+**Create docker-compose.yml:**
+```yaml
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.backend
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_FILE_NAME=/data/local.db
+    volumes:
+      - sqlite-data:/data
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://backend:8080
+    ports:
+      - "3000:8080"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  sqlite-data:
+```
+
+**Quick Commands:**
+```bash
+# Start all services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop all services
+docker-compose down
+
+# Rebuild and restart
+docker-compose up -d --build
+
+# Access: http://localhost:3000
+```
+
+### Single Container (Simpler)
+
+**Using unified Dockerfile:**
+```bash
+# Build image
+docker build -t egg-tracker:latest .
+
+# Run container
+docker run -d \
+  -p 3000:3000 \
+  -v $(pwd)/data:/data \
+  -e DB_FILE_NAME=/data/local.db \
+  --name egg-tracker \
+  egg-tracker:latest
+
+# View logs
+docker logs -f egg-tracker
+
+# Stop and remove
+docker stop egg-tracker && docker rm egg-tracker
+```
+
+### Development with Hot Reload
+
+```yaml
+# docker-compose.dev.yml
+services:
+  backend:
+    volumes:
+      - ./backend:/app
+    command: air  # Go hot reload
+
+  frontend:
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: pnpm dev
+    ports:
+      - "3000:3000"
+```
+
+```bash
+# Start development environment
+docker-compose -f docker-compose.dev.yml up
+```
+
+### Docker Build Files Summary
+
+**Backend Dockerfile.backend:**
+- Multi-stage build (golang:alpine → alpine)
+- Pure Go SQLite driver (CGO_ENABLED=0)
+- Non-root user
+- Health checks
+
+**Frontend Dockerfile.frontend:**
+- Multi-stage build (node:alpine → nginx:alpine)
+- Next.js static export
+- Nginx for serving files
+- Optimized caching
+
+**See full documentation for complete Dockerfiles and configurations.**
+
 ## Troubleshooting
 
 ### Issue: CORS errors
@@ -262,6 +378,12 @@ pnpm remove ag-charts-react ag-charts-community
 
 ### Issue: Images not loading
 **Solution:** Add `images: { unoptimized: true }` to next.config.ts
+
+### Issue: Docker container won't start
+**Solution:** Check logs with `docker logs <container-name>` and ensure ports are not in use
+
+### Issue: Containers can't communicate
+**Solution:** Ensure they're on the same Docker network or use service names in docker-compose
 
 ## Further Reading
 

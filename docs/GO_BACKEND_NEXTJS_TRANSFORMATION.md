@@ -7,7 +7,8 @@
 4. [Next.js Single Page Application (SPA) Approach](#nextjs-single-page-application-spa-approach)
 5. [Dependency Reduction Strategy](#dependency-reduction-strategy)
 6. [Best Practices for Fetch Requests](#best-practices-for-fetch-requests)
-7. [Implementation Roadmap](#implementation-roadmap)
+7. [Docker Deployment](#docker-deployment)
+8. [Implementation Roadmap](#implementation-roadmap)
 
 ---
 
@@ -922,6 +923,865 @@ export class ErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
+```
+
+---
+
+## Docker Deployment
+
+This section provides comprehensive Docker deployment strategies for the transformed architecture, using the current Dockerfile as a reference.
+
+### Current Docker Setup (Next.js Standalone)
+
+The existing Dockerfile uses a multi-stage build for Next.js with standalone output:
+
+```dockerfile
+# Current: Node.js only
+FROM node:22-bullseye-slim AS base
+FROM base AS deps
+# ... install dependencies
+FROM base AS builder
+# ... build Next.js
+FROM base AS runner
+# ... run standalone Next.js server
+```
+
+**Current features:**
+- Multi-stage build for smaller image
+- SQLite3 installed in runner stage
+- Standalone Next.js server on port 3000
+- Non-root user (nextjs)
+- Environment variables for configuration
+
+### Docker Strategies for Go Backend + Next.js SPA
+
+There are three main approaches for containerizing the new architecture:
+
+1. **Multi-container (Recommended)** - Separate containers for frontend and backend
+2. **Single Container with Multi-stage Build** - Both services in one container
+3. **Docker Compose** - Orchestrate multiple containers
+
+---
+
+### Strategy 1: Multi-Container Deployment (Recommended)
+
+This approach uses separate containers for the Go backend and Next.js frontend, providing the best separation of concerns.
+
+#### Backend Dockerfile (Dockerfile.backend)
+
+```dockerfile
+# syntax=docker.io/docker/dockerfile:1
+
+# Build stage
+FROM golang:1.23-alpine AS builder
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apk add --no-cache git
+
+# Copy go mod files
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build the Go application
+# CGO_ENABLED=0 for static binary (if using modernc.org/sqlite)
+# CGO_ENABLED=1 if using mattn/go-sqlite3
+ARG CGO_ENABLED=0
+RUN CGO_ENABLED=${CGO_ENABLED} GOOS=linux go build -a -installsuffix cgo -o server ./cmd/server
+
+# Runtime stage
+FROM alpine:latest
+
+WORKDIR /app
+
+# Install runtime dependencies
+RUN apk --no-cache add ca-certificates sqlite
+
+# Create non-root user
+RUN addgroup -g 1001 -S appuser && \
+    adduser -u 1001 -S appuser -G appuser
+
+# Copy binary from builder
+COPY --from=builder /app/server .
+
+# Copy database migrations if needed
+COPY --from=builder /app/drizzle ./drizzle
+
+# Create directory for SQLite database
+RUN mkdir -p /data && chown appuser:appuser /data
+
+USER appuser
+
+EXPOSE 8080
+
+ENV DB_FILE_NAME=/data/local.db
+ENV PORT=8080
+
+CMD ["./server"]
+```
+
+#### Frontend Dockerfile (Dockerfile.frontend)
+
+```dockerfile
+# syntax=docker.io/docker/dockerfile:1
+
+# Build stage
+FROM node:22-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json pnpm-lock.yaml ./
+
+# Install pnpm and dependencies
+RUN corepack enable pnpm && \
+    pnpm install --frozen-lockfile
+
+# Copy source code
+COPY . .
+
+# Build arguments for configuration
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+
+# Build Next.js static export
+RUN pnpm build
+
+# Runtime stage - serve static files with nginx
+FROM nginx:alpine
+
+# Copy custom nginx config
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Copy static files from builder
+COPY --from=builder /app/out /usr/share/nginx/html
+
+# Non-root user
+RUN chown -R nginx:nginx /usr/share/nginx/html && \
+    chown -R nginx:nginx /var/cache/nginx && \
+    chown -R nginx:nginx /var/log/nginx && \
+    touch /var/run/nginx.pid && \
+    chown -R nginx:nginx /var/run/nginx.pid
+
+USER nginx
+
+EXPOSE 8080
+
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+#### nginx.conf for Frontend
+
+```nginx
+events {
+    worker_connections 1024;
+}
+
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    sendfile on;
+    keepalive_timeout 65;
+    gzip on;
+    gzip_vary on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+    server {
+        listen 8080;
+        server_name _;
+        root /usr/share/nginx/html;
+        index index.html;
+
+        # SPA routing - redirect all requests to index.html
+        location / {
+            try_files $uri $uri/ /index.html;
+        }
+
+        # Security headers
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-XSS-Protection "1; mode=block" always;
+
+        # Cache static assets
+        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+        }
+
+        # Disable cache for HTML
+        location ~* \.html$ {
+            add_header Cache-Control "no-cache, no-store, must-revalidate";
+        }
+    }
+}
+```
+
+#### Docker Compose for Multi-Container
+
+```yaml
+# docker-compose.yml
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.backend
+      args:
+        CGO_ENABLED: 0
+    container_name: egg-tracker-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_FILE_NAME=/data/local.db
+      - PORT=8080
+    volumes:
+      - sqlite-data:/data
+      - ./drizzle:/app/drizzle:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://backend:8080
+    container_name: egg-tracker-frontend
+    ports:
+      - "3000:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  sqlite-data:
+    driver: local
+```
+
+#### Usage
+
+```bash
+# Build and start all services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop all services
+docker-compose down
+
+# Rebuild specific service
+docker-compose up -d --build frontend
+
+# Access application
+# Frontend: http://localhost:3000
+# Backend API: http://localhost:8080
+```
+
+---
+
+### Strategy 2: Single Container with Both Services
+
+This approach combines both the Go backend and Next.js frontend in a single container, similar to the current setup.
+
+#### Unified Dockerfile
+
+```dockerfile
+# syntax=docker.io/docker/dockerfile:1
+
+# Build Go backend
+FROM golang:1.23-alpine AS go-builder
+
+WORKDIR /app
+
+RUN apk add --no-cache git
+
+COPY backend/go.mod backend/go.sum ./
+RUN go mod download
+
+COPY backend/ ./
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o server ./cmd/server
+
+# Build Next.js frontend
+FROM node:22-alpine AS node-builder
+
+WORKDIR /app
+
+COPY package.json pnpm-lock.yaml ./
+RUN corepack enable pnpm && pnpm install --frozen-lockfile
+
+COPY . .
+
+ARG NEXT_PUBLIC_API_URL=http://localhost:8080
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+
+RUN pnpm build
+
+# Runtime with nginx + supervisor
+FROM alpine:latest
+
+WORKDIR /app
+
+# Install runtime dependencies
+RUN apk --no-cache add nginx supervisor ca-certificates sqlite
+
+# Create directories
+RUN mkdir -p /data /run/nginx /var/log/supervisor
+
+# Copy Go backend binary
+COPY --from=go-builder /app/server ./backend/server
+
+# Copy Next.js static files
+COPY --from=node-builder /app/out ./frontend
+
+# Nginx configuration
+COPY nginx-unified.conf /etc/nginx/http.d/default.conf
+
+# Supervisor configuration
+COPY supervisord.conf /etc/supervisord.conf
+
+# Create non-root user
+RUN addgroup -g 1001 -S appuser && \
+    adduser -u 1001 -S appuser -G appuser && \
+    chown -R appuser:appuser /app /data /run/nginx /var/log/supervisor /var/lib/nginx
+
+USER appuser
+
+EXPOSE 3000
+
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
+```
+
+#### nginx-unified.conf
+
+```nginx
+server {
+    listen 3000;
+    server_name _;
+    root /app/frontend;
+    index index.html;
+
+    # API proxy to Go backend
+    location /api/ {
+        proxy_pass http://localhost:8080/api/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Health check endpoint
+    location /health {
+        proxy_pass http://localhost:8080/health;
+    }
+
+    # Serve static files
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Cache static assets
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}
+```
+
+#### supervisord.conf
+
+```ini
+[supervisord]
+nodaemon=true
+user=appuser
+logfile=/var/log/supervisor/supervisord.log
+pidfile=/var/run/supervisord.pid
+
+[program:backend]
+command=/app/backend/server
+directory=/app/backend
+autostart=true
+autorestart=true
+stderr_logfile=/var/log/supervisor/backend.err.log
+stdout_logfile=/var/log/supervisor/backend.out.log
+environment=DB_FILE_NAME="/data/local.db",PORT="8080"
+
+[program:nginx]
+command=/usr/sbin/nginx -g "daemon off;"
+autostart=true
+autorestart=true
+stderr_logfile=/var/log/supervisor/nginx.err.log
+stdout_logfile=/var/log/supervisor/nginx.out.log
+```
+
+#### Usage
+
+```bash
+# Build image
+docker build -t egg-tracker:latest .
+
+# Run container
+docker run -d \
+  -p 3000:3000 \
+  -v $(pwd)/data:/data \
+  -e DB_FILE_NAME=/data/local.db \
+  --name egg-tracker \
+  egg-tracker:latest
+
+# View logs
+docker logs -f egg-tracker
+
+# Access application at http://localhost:3000
+```
+
+---
+
+### Strategy 3: Production Docker Compose with Nginx Gateway
+
+This advanced setup uses a separate nginx container as a reverse proxy, similar to production deployments.
+
+```yaml
+# docker-compose.prod.yml
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.backend
+    container_name: egg-tracker-api
+    expose:
+      - "8080"
+    environment:
+      - DB_FILE_NAME=/data/local.db
+      - PORT=8080
+    volumes:
+      - sqlite-data:/data
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        # Internal network URL
+        NEXT_PUBLIC_API_URL: http://localhost/api
+    container_name: egg-tracker-web
+    expose:
+      - "8080"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: egg-tracker-gateway
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx-gateway.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro  # If using SSL
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
+    networks:
+      - app-network
+
+volumes:
+  sqlite-data:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
+```
+
+#### nginx-gateway.conf
+
+```nginx
+events {
+    worker_connections 1024;
+}
+
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    # Logging
+    access_log /var/log/nginx/access.log;
+    error_log /var/log/nginx/error.log;
+
+    # Gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml;
+
+    # Backend upstream
+    upstream backend {
+        server backend:8080;
+    }
+
+    # Frontend upstream
+    upstream frontend {
+        server frontend:8080;
+    }
+
+    server {
+        listen 80;
+        server_name _;
+
+        # API routes to backend
+        location /api/ {
+            proxy_pass http://backend;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_cache_bypass $http_upgrade;
+        }
+
+        # Health check
+        location /health {
+            proxy_pass http://backend;
+        }
+
+        # Frontend static files
+        location / {
+            proxy_pass http://frontend;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        }
+    }
+
+    # HTTPS configuration (optional)
+    # server {
+    #     listen 443 ssl http2;
+    #     server_name your-domain.com;
+    #
+    #     ssl_certificate /etc/nginx/ssl/cert.pem;
+    #     ssl_certificate_key /etc/nginx/ssl/key.pem;
+    #
+    #     # Same location blocks as above
+    # }
+}
+```
+
+---
+
+### Docker Best Practices
+
+#### 1. Multi-stage Builds
+```dockerfile
+# Keep builder stages separate from runtime
+FROM golang:1.23-alpine AS builder
+# ... build steps
+
+FROM alpine:latest
+# ... copy only necessary artifacts
+```
+
+#### 2. Layer Caching Optimization
+```dockerfile
+# Copy dependency files first
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Then copy source code
+COPY . .
+RUN go build ...
+```
+
+#### 3. Security
+```dockerfile
+# Use specific versions, not latest
+FROM golang:1.23-alpine
+
+# Run as non-root user
+RUN adduser -D appuser
+USER appuser
+
+# Scan for vulnerabilities
+# docker scan your-image:tag
+```
+
+#### 4. Image Size Reduction
+```dockerfile
+# Use alpine or distroless images
+FROM alpine:latest
+
+# Multi-stage builds to exclude build tools
+FROM builder AS compile
+FROM scratch AS runtime  # Or alpine
+
+# Remove unnecessary files
+RUN rm -rf /tmp/* /var/cache/apk/*
+```
+
+#### 5. Health Checks
+```dockerfile
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+```
+
+#### 6. Environment Variables
+```dockerfile
+# Use ARG for build-time variables
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+
+# Use ENV for runtime variables
+ENV PORT=8080
+```
+
+---
+
+### Development vs Production Configurations
+
+#### Development (docker-compose.dev.yml)
+```yaml
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev  # Development Dockerfile with hot reload
+    volumes:
+      - ./backend:/app  # Mount source for hot reload
+    environment:
+      - GO_ENV=development
+      - DB_FILE_NAME=/data/local.db
+    command: air  # Use air for hot reload
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
+    command: pnpm dev
+    ports:
+      - "3000:3000"
+```
+
+#### Production (docker-compose.prod.yml)
+See Strategy 3 above for production configuration.
+
+---
+
+### CI/CD Docker Builds
+
+#### GitHub Actions Example
+```yaml
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      
+      - name: Login to Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Build and push backend
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile.backend
+          push: true
+          tags: ghcr.io/${{ github.repository }}/backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Build and push frontend
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile.frontend
+          push: true
+          tags: ghcr.io/${{ github.repository }}/frontend:latest
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ secrets.API_URL }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+```
+
+---
+
+### Deployment Platforms
+
+#### Fly.io
+```toml
+# fly.toml (backend)
+app = "egg-tracker-backend"
+
+[build]
+  dockerfile = "Dockerfile.backend"
+
+[[services]]
+  internal_port = 8080
+  protocol = "tcp"
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+[mounts]
+  source = "sqlite_data"
+  destination = "/data"
+```
+
+#### Railway
+- Push to GitHub
+- Connect repository to Railway
+- Set build command: `docker build -f Dockerfile.backend`
+- Configure environment variables
+- Deploy automatically on push
+
+#### AWS ECS/Fargate
+```json
+{
+  "family": "egg-tracker",
+  "containerDefinitions": [
+    {
+      "name": "backend",
+      "image": "ghcr.io/user/egg-tracker/backend:latest",
+      "portMappings": [{"containerPort": 8080}],
+      "environment": [
+        {"name": "DB_FILE_NAME", "value": "/data/local.db"}
+      ]
+    },
+    {
+      "name": "frontend",
+      "image": "ghcr.io/user/egg-tracker/frontend:latest",
+      "portMappings": [{"containerPort": 8080}]
+    }
+  ]
+}
+```
+
+---
+
+### Database Persistence
+
+#### SQLite in Docker
+```yaml
+# Ensure data persistence with named volumes
+services:
+  backend:
+    volumes:
+      - sqlite-data:/data
+    environment:
+      - DB_FILE_NAME=/data/local.db
+
+volumes:
+  sqlite-data:
+    driver: local
+```
+
+#### Database Initialization
+```dockerfile
+# In backend Dockerfile
+COPY --from=builder /app/drizzle ./drizzle
+COPY init-db.sh ./
+
+# In init-db.sh
+#!/bin/sh
+if [ ! -f /data/local.db ]; then
+  echo "Initializing database..."
+  # Run migrations
+  # Or copy seed database
+fi
+```
+
+---
+
+### Troubleshooting
+
+#### Container Won't Start
+```bash
+# Check logs
+docker logs <container-name>
+
+# Check if port is already in use
+lsof -i :8080
+
+# Inspect container
+docker inspect <container-name>
+```
+
+#### Network Issues Between Containers
+```bash
+# Check networks
+docker network ls
+
+# Inspect network
+docker network inspect <network-name>
+
+# Test connectivity
+docker exec <container> ping <other-container>
+```
+
+#### Build Failures
+```bash
+# Clear build cache
+docker builder prune
+
+# Build with no cache
+docker build --no-cache -t image-name .
+
+# Check disk space
+docker system df
 ```
 
 ---
