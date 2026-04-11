@@ -6,14 +6,21 @@ import log from './utils/logger';
 
 const URL = 'https://www.traderjoes.com/home/products/pdp/pasture-raised-large-brown-eggs-062124';
 
-test("Trader Joe's", async ({ page }) => {
+const isLinuxArm64 = process.platform === 'linux' && process.arch === 'arm64';
+
+test("Trader Joe's", async ({ page, browserName }) => {
+  test.skip(
+    isLinuxArm64 && browserName === 'chromium',
+    "Trader Joe's is being blocked by Akamai on Chromium from this Pi. Try the firefox project instead.",
+  );
+
   await page.goto(URL, { waitUntil: 'domcontentloaded' });
 
   const accessDenied = page.getByRole('heading', { name: 'Access Denied' });
   if (await accessDenied.isVisible().catch(() => false)) {
     test.skip(
       true,
-      "Trader Joe's is blocking automated browser traffic from this environment, so this scraper cannot reliably reach the product page.",
+      `Trader Joe's is blocking automated browser traffic from this ${browserName} run, so this scraper cannot reliably reach the product page.`,
     );
   }
 

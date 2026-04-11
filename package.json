@@ -15,9 +15,12 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "test": "playwright test --project=chromium",
+    "test:firefox": "playwright test --project=firefox",
     "test:install:pi": "playwright install --with-deps chromium",
+    "test:install:pi:firefox": "playwright install --with-deps firefox",
     "test:headed": "xvfb-run -a playwright test --project=chromium --headed --workers=1",
     "test:edge": "playwright test --project=\"Microsoft Edge\"",
+    "test:traderjoes:firefox": "playwright test tests/traderjoes.spec.ts --project=firefox",
     "test:ui": "playwright test --ui",
     "test:debug": "playwright test --project=chromium --headed --debug --workers=1",
     "test:report": "playwright show-report --host 0.0.0.0"
