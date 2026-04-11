@@ -18,6 +18,34 @@ Name is a portmanteau of [tamago 卵](https://jpdb.io/vocabulary/1549140/%E5%8D%
 6. Run the dev server
    1. `pnpm run dev`
 
+## Raspberry Pi Playwright
+
+The default Playwright flow is now tuned for Raspberry Pi and other Linux ARM64 machines:
+
+1. Install dependencies with `pnpm install`
+2. Install the Pi browser/runtime dependencies once with `pnpm run test:install:pi`
+3. Run the scraper suite with `pnpm test`
+
+`pnpm test` uses Playwright's bundled Chromium in headless mode, which is more reliable on Raspberry Pi than trying to launch Microsoft Edge in a headed session.
+
+### Optional Pi Commands
+
+- `pnpm run test:headed`
+- `pnpm run test:debug`
+- `pnpm run test:report`
+
+Use `pnpm run test:headed` only when `xvfb-run` is available on the Pi. Headed Playwright on Linux needs Xvfb or a real display server.
+
+### Windows Browser Parity
+
+If you still want to compare behavior against Microsoft Edge on Windows, use `pnpm run test:edge`. That project is only exposed on Windows so the default Linux/Pi path stays on bundled Chromium.
+
+### Troubleshooting
+
+- If the browser fails before any selectors run, retry with `DEBUG=pw:browser pnpm test` to capture launch diagnostics.
+- If the suite still passes on Windows but fails on the Pi after launch succeeds, inspect the HTML report, traces, and screenshots before changing selectors.
+- The production `Dockerfile` is for the Next.js app only. If you want containerized Playwright later, add a separate Playwright runner image instead of extending the production image.
+
 ## TODO
 
 - [x] Table stuff
