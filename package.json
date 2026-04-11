@@ -20,7 +20,7 @@
     "test:edge": "playwright test --project=\"Microsoft Edge\"",
     "test:ui": "playwright test --ui",
     "test:debug": "playwright test --project=chromium --headed --debug --workers=1",
-    "test:report": "playwright show-report"
+    "test:report": "playwright show-report --host 0.0.0.0"
   },
   "dependencies": {
     "@libsql/client": "^0.15.0",
