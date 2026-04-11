@@ -7,7 +7,16 @@ import log from './utils/logger';
 const URL = 'https://www.traderjoes.com/home/products/pdp/pasture-raised-large-brown-eggs-062124';
 
 test("Trader Joe's", async ({ page }) => {
-  await page.goto(URL);
+  await page.goto(URL, { waitUntil: 'domcontentloaded' });
+
+  const accessDenied = page.getByRole('heading', { name: 'Access Denied' });
+  if (await accessDenied.isVisible().catch(() => false)) {
+    test.skip(
+      true,
+      "Trader Joe's is blocking automated browser traffic from this environment, so this scraper cannot reliably reach the product page.",
+    );
+  }
+
   const price = await page
     .locator('.aem-GridColumn')
     .getByText(/\$\d+\.\d{2}/)

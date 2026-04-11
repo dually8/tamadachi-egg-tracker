@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { db } from '../src/db/drizzle';
 import { priceTable } from '../src/db/schema';
 import { extractPrice } from './utils/extract-price';
@@ -6,10 +6,38 @@ import log from './utils/logger';
 
 const URL = 'https://shop.aldi.us/store/aldi/products/115095-goldhen-grade-a-large-eggs-12-ct';
 
+async function dismissCookieBanner(page: Page) {
+  const rejectButton = page.getByRole('button', { name: 'Reject All Non-Essential' });
+  const bannerAppeared = await rejectButton
+    .waitFor({ state: 'visible', timeout: 5_000 })
+    .then(() => true)
+    .catch(() => false);
+
+  if (bannerAppeared) {
+    await rejectButton.click();
+    await expect(rejectButton).toBeHidden();
+  }
+}
+
 test('Aldi', async ({ page }) => {
   await page.goto(URL);
-  await page.getByRole('dialog').getByRole('button', { name: 'Pickup' }).click();
-  await page.getByRole('button', { name: 'Confirm' }).click();
+  await dismissCookieBanner(page);
+
+  const shoppingDialog = page
+    .getByRole('dialog')
+    .filter({ has: page.getByRole('button', { name: 'Pickup' }) })
+    .first();
+
+  await shoppingDialog.getByRole('button', { name: 'Pickup' }).click();
+  const confirmButton = shoppingDialog.getByRole('button', { name: 'Confirm' });
+
+  try {
+    await confirmButton.click({ timeout: 5_000 });
+  } catch {
+    await dismissCookieBanner(page);
+    await confirmButton.click();
+  }
+
   const priceElement = page
     .locator('#item_details')
     .getByText('Current price')
