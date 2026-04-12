@@ -1,7 +1,7 @@
 import PriceHistoryChart from '@/components/price-history-chart';
 import PriceTableAgGrid from '@/components/price-table-ag-grid';
 import RemoveDuplicateDaysButton from '@/components/remove-duplicate-days-button';
-import { db } from '@/db/drizzle';
+import { getDb } from '@/db/drizzle';
 import { Price, priceTable } from '@/db/schema';
 import { desc } from 'drizzle-orm';
 import { removeDuplicateDaysAction } from './actions';
@@ -10,6 +10,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function Home() {
   // Fetch data from the database
+  const db = getDb();
   const prices = await db.select().from(priceTable).orderBy(desc(priceTable.date));
   const storeNames = Array.from(new Set(prices.map(price => price.storeName))).sort((a,b) => a.localeCompare(b));
   const priceMap = new Map<string, Price[]>();
