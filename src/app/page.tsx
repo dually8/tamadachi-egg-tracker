@@ -1,8 +1,10 @@
 import PriceHistoryChart from '@/components/price-history-chart';
 import PriceTableAgGrid from '@/components/price-table-ag-grid';
+import RemoveDuplicateDaysButton from '@/components/remove-duplicate-days-button';
 import { db } from '@/db/drizzle';
 import { Price, priceTable } from '@/db/schema';
 import { desc } from 'drizzle-orm';
+import { removeDuplicateDaysAction } from './actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,6 +18,7 @@ export default async function Home() {
   });
   return (
     <main>
+      <RemoveDuplicateDaysButton onRemoveDuplicates={removeDuplicateDaysAction} />
       <PriceTableAgGrid prices={prices} />
       {storeNames.map(storeName => (
         <PriceHistoryChart

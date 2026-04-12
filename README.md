@@ -46,6 +46,12 @@ If you still want to compare behavior against Microsoft Edge on Windows, use `pn
 - If the suite still passes on Windows but fails on the Pi after launch succeeds, inspect the HTML report, traces, and screenshots before changing selectors.
 - The production `Dockerfile` is for the Next.js app only. If you want containerized Playwright later, add a separate Playwright runner image instead of extending the production image.
 
+## Daily Deduplication
+
+The homepage now includes a `Remove duplicate days` maintenance action. It deletes older duplicate rows and keeps only the latest record for each `storeName + storeLocation + local calendar day` group.
+
+Use `pnpm run test:db` to run the Vitest database tests for the dedupe logic. Those tests use an isolated in-memory SQLite database and verify that the latest same-day row is preserved.
+
 ## TODO
 
 - [x] Table stuff
