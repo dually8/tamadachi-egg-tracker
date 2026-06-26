@@ -5,6 +5,7 @@ const isWindows = process.platform === 'win32';
 
 export default defineConfig({
   testDir: './tests',
+  testMatch: /.*\.spec\.ts/,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: 2,

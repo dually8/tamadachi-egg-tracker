@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { db } from '../src/db/drizzle';
+import { getDb } from '../src/db/drizzle';
 import { priceTable } from '../src/db/schema';
 import { extractPrice } from './utils/extract-price';
 import log from './utils/logger';
@@ -23,7 +23,7 @@ test('Target', async ({ page }) => {
   log(`Target parsed price: ${parsedPrice}`);
   expect(parsedPrice).toBeGreaterThan(0);
   // Save to DB
-  await db.insert(priceTable).values({
+  await getDb().insert(priceTable).values({
     price: parsedPrice,
     storeLocation: 'Hixson, TN',
     storeName: 'Target',
