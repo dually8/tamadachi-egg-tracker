@@ -15,10 +15,16 @@
 }
 ```
 
-```
+```bash
 sudo chown -R 1001:1001 /path/to/tamadachi-egg-tracker/data
 sudo chmod 755 /path/to/tamadachi-egg-tracker/data
 sudo chmod 664 /path/to/tamadachi-egg-tracker/data/local.db
 cd /path/to
 docker compose restart eggtracker
+```
+
+## Cannot copy from windows share to data directory
+
+```bash
+sudo chmod -R 777 /path/to/data
 ```
