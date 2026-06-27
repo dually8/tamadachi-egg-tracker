@@ -18,6 +18,7 @@
     "test:db:watch": "vitest",
     "test": "playwright test --project=chromium",
     "test:firefox": "playwright test --project=firefox",
+    "test:firefox:headed": "xvfb-run -a playwright test --project=firefox --headed --workers=1",
     "test:install:pi": "playwright install --with-deps chromium",
     "test:install:pi:firefox": "playwright install --with-deps firefox",
     "test:headed": "xvfb-run -a playwright test --project=chromium --headed --workers=1",
