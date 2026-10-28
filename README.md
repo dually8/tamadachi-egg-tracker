@@ -73,6 +73,10 @@ Use `pnpm run test:db` to run the Vitest database tests for the dedupe logic. Th
 
 ![Image of application showing egg prices and charts](/docs/img/egg-price-tracker.png)
 
+## Documentation
+
+- **[Go Backend + Next.js Transformation Guide](./docs/GO_BACKEND_NEXTJS_TRANSFORMATION.md)** - Comprehensive guide for transforming this project to use a Go backend with Next.js SSG/SPA frontend
+
 ## Resources
 
 - [NextJs](https://nextjs.org/docs/app/getting-started/installation)
