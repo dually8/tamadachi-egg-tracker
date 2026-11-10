@@ -3,3 +3,20 @@ allowBuilds:
   esbuild: true
   sharp: true
   unrs-resolver: true
+# Keep transitive development tools on patched releases until their parents update.
+overrides:
+  '@esbuild-kit/core-utils>esbuild': ^0.28.2
+  'minimatch@>=7.0.0 <11.0.1': ^11.0.1
+minimumReleaseAgeExclude:
+  - '@next/env@16.4.6'
+  - '@next/eslint-plugin-next@16.4.6'
+  - '@next/swc-darwin-arm64@16.4.6'
+  - '@next/swc-darwin-x64@16.4.6'
+  - '@next/swc-linux-arm64-gnu@16.4.6'
+  - '@next/swc-linux-arm64-musl@16.4.6'
+  - '@next/swc-linux-x64-gnu@16.4.6'
+  - '@next/swc-linux-x64-musl@16.4.6'
+  - '@next/swc-win32-arm64-msvc@16.4.6'
+  - '@next/swc-win32-x64-msvc@16.4.6'
+  - eslint-config-next@16.4.6
+  - next@16.4.6

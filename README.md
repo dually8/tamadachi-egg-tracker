@@ -48,7 +48,17 @@ If you still want to compare behavior against Microsoft Edge on Windows, use `pn
 
 ## Daily Deduplication
 
-The homepage now includes a `Remove duplicate days` maintenance action. It deletes older duplicate rows and keeps only the latest record for each `storeName + storeLocation + local calendar day` group.
+Database maintenance is an operator-only command. The public homepage cannot delete records.
+
+Back up the database first, then run this from the source checkout with the same `DB_FILE_NAME` and timezone (`TZ`) as the app:
+
+```sh
+DB_FILE_NAME=/absolute/path/to/local.db TZ=America/New_York pnpm run db:dedupe --yes
+```
+
+The explicit `--yes` flag is required. This deletes older duplicate rows and keeps only the latest record for each `storeName + storeLocation + local calendar day` group. Omitting `TZ` uses the command process's local timezone, just as the application did previously. Refresh the homepage to see the updated data.
+
+The standalone Docker image contains only the web app. Run this command from a source checkout with access to the same database file; it is not a `docker exec` command.
 
 Use `pnpm run test:db` to run the Vitest database tests for the dedupe logic. Those tests use an isolated in-memory SQLite database and verify that the latest same-day row is preserved.
 
